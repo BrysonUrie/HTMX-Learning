@@ -1,0 +1,82 @@
+{{ block "index" . }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/css/index.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            document.body.addEventListener('htmx:beforeSwap', function(evt) {
+                if (evt.detail.xhr.status === 422) {
+                    evt.detail.shouldSwap = true;
+                    evt.detail.isError = false;
+                }
+            });
+        }); 
+    </script>
+    <script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
+    <title>index</title>
+</head>
+<body>
+    {{ template "form" .Form }}
+    <hr>
+    {{ template "display" .Data }}
+</body>
+</html>
+{{end}}
+
+{{ block "form" .}}
+    <form hx-post="/contacts"  hx-swap="outerHTML">
+        name: <input type="text" name="name" 
+        {{if .Values.name}} value  = {{.Values.name}} {{end}}
+        />
+        
+        email: <input type="text" name="email" 
+        {{if .Values.email}} value  = "{{.Values.email}}" {{end}}
+        />
+
+        {{ if .Errors.email }}
+        <div style="color: red;">{{ .Errors.email }}</div>
+        {{end}}
+
+        <button type="submit">Create Contact</button>
+    </form>
+{{end}}
+
+{{ block "display" .}}
+    <div id="contacts" style="display: flex; flex-direction: column;">
+    {{ range .Contacts }}
+        {{ template "contact" . }}
+    {{end}}
+    </div>
+{{end}}
+
+{{ block "contact" .}}
+    <div class="contact" id="contact-{{ .Id }}" style="display: flex;">
+        <div 
+        hx-indicator="#ci-{{ .Id }}" 
+        hx-swap="outerHTML swap:500ms" 
+        hx-target="#contact-{{ .Id }}" 
+        hx-delete="/contacts/{{ .Id }}" style="width: 1rem; cursor: pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path fill="none" d="M0 0h24v24H0z"/>
+                <path d="M20 6h-4V4c0-1.1-.9-2-2-2H10c-1.1 0-2 .9-2 2v2H4c-1.1 0-1.99.9-1.99 2L2 20c0 1.1.89 2 1.99 2H20c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8 0v2h4V6h-4zm6 12H6v-6h12v6zm-4-4v2h-4v-2h4z"/>
+            </svg>
+        </div>
+        <div>
+            <span>{{ .Name }}</span>
+            <span>{{ .Email }}</span>
+            
+        </div>
+        <div id="ci-{{ .Id }}" class="htmx-indicator">
+            <img src="/images/bars.svg" alt="loading" style="width: 1rem;">
+        </div>
+    </div>
+{{end}}
+
+{{ block "oob-contact" . }}
+    <div id="contacts" hx-swap-oob="afterbegin" >
+        {{template "contact" .}}
+    </div>
+{{end}}
